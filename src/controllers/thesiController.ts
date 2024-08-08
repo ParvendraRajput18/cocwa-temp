@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { Request, Response } from 'express';
 import AppDataSource from '../database/dbConnection';
-import { Thesi } from '../entity/thesiEntity';  
+import { Thesi } from '../entity/thesiEntity';
 
 interface ThesiRequestBody {
   thesiId: string;
@@ -9,15 +9,15 @@ interface ThesiRequestBody {
   cocAssetClass: string;
   thepiId: string;
   thesisName: string;
-  mode: string; 
-  lastUpdatedBy: string; 
-  reviewRequired: string; 
+  mode: string;
+  lastUpdatedBy: string;
+  reviewRequired: string;
 }
 
 interface UpdateThesiStatusRequestBody {
   status: string;
   lastUpdatedBy: string;
-  reviewRequired?: string; 
+  reviewRequired?: string;
 }
 const validTransitions: { [key: string]: string[] } = {
   'New Trade': ['Checked by PA'],
@@ -27,7 +27,7 @@ const validTransitions: { [key: string]: string[] } = {
 };
 
 type StatusTransition = {
-  [key: string]: string[]; 
+  [key: string]: string[];
 };
 
 
@@ -63,7 +63,7 @@ export const updateThesiStatus = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-   
+
     let newMode = mode;
     let newStatus = status;
 
@@ -92,35 +92,35 @@ export const updateThesiStatus = async (req: Request, res: Response): Promise<vo
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 export const addThesi = async (req: Request<{}, {}, ThesiRequestBody>, res: Response) => {
   const { thesiId, status, cocAssetClass, thepiId, thesisName, mode, lastUpdatedBy, reviewRequired } = req.body;
 
 
   if (!thesiId || !status || !cocAssetClass || !thepiId || !thesisName || !mode || !lastUpdatedBy || reviewRequired === undefined) {
-      return res.status(400).json({ error: 'Bad Request: Missing required fields' });
+    return res.status(400).json({ error: 'Bad Request: Missing required fields' });
   }
 
   try {
-      const result = await AppDataSource.getRepository(Thesi).query(
-          'INSERT INTO thesi ("thesiId", "status", "cocAssetClass", "thepiId", "thesisName", "mode", "lastUpdatedBy", "reviewRequired") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-          [thesiId, status, cocAssetClass, thepiId, thesisName, mode, lastUpdatedBy, reviewRequired]
-      );
+    const result = await AppDataSource.getRepository(Thesi).query(
+      'INSERT INTO thesi ("thesiId", "status", "cocAssetClass", "thepiId", "thesisName", "mode", "lastUpdatedBy", "reviewRequired") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [thesiId, status, cocAssetClass, thepiId, thesisName, mode, lastUpdatedBy, reviewRequired]
+    );
 
-      res.status(201).json(result[0]);
+    res.status(201).json(result[0]);
   } catch (error) {
-      console.error('Error inserting thesi:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error inserting thesi:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
-
 export const getAllThesis = async (req: Request, res: Response): Promise<void> => {
   try {
-    
+
     const result = await AppDataSource.getRepository(Thesi).query(
       'SELECT * FROM thesi'
     );
-    
+
     res.status(200).json(result);
   } catch (error) {
     console.error('Error fetching all thesis:', error);
@@ -132,22 +132,46 @@ export const getThesisByThesiId = async (req: Request, res: Response): Promise<v
   const { thesiId } = req.params;
 
   if (!thesiId) {
-      res.status(400).json({ error: 'Bad Request: Missing thesiId' });
-      return;
+    res.status(400).json({ error: 'Bad Request: Missing thesiId' });
+    return;
   }
 
   try {
-      const result = await AppDataSource.getRepository(Thesi).query(
-          'SELECT * FROM thesi WHERE "thesiId" = $1',
-          [thesiId]
-      );
+    const result = await AppDataSource.getRepository(Thesi).query(
+      'SELECT * FROM thesi WHERE "thesiId" = $1',
+      [thesiId]
+    );
 
-      res.status(200).json(result);
+    res.status(200).json(result);
   } catch (error) {
-      console.error('Error fetching thesis by thesiId:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error fetching thesis by thesiId:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
+export const deleteThesi = async (req: Request, res: Response): Promise<void> => {
+  const { thesiId } = req.params;
 
+  if (!thesiId) {
+    res.status(400).json({ error: 'Bad Request: Missing thesiId' });
+    return;
+  }
 
+  try {
+  
+    const result = await AppDataSource.getRepository(Thesi).query(
+      'DELETE FROM thesi WHERE "thesiId" = $1 RETURNING *',
+      [thesiId]
+    );
+
+    if (result.length === 0) {
+      res.status(404).json({ error: 'Thesis not found' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Thesis deleted successfully', deletedThesi: result[0] });
+  } catch (error) {
+    console.error('Error deleting thesis:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
