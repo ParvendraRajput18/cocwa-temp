@@ -19,4 +19,16 @@ export class Thesi {
 
   @Column({ type: 'varchar', length: 255 })
   thesisName: string;
+
+  @Column({ type: 'varchar', length: 255 })
+  mode: string; 
+  // 'Inception' or 'Annual Review'
+
+  @Column({ type: 'varchar', length: 255 })
+  lastUpdatedBy: string;
+  // User ID of the last updater
+
+  @Column({ type: 'varchar', length: 255, default: 'no' })
+  reviewRequired: string; 
+  // 'yes' or 'no'
 }
