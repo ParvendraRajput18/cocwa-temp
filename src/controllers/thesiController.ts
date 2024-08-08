@@ -1,4 +1,4 @@
-import "reflect-metadata"
+import "reflect-metadata";
 import { Request, Response } from 'express';
 import AppDataSource from '../database/dbConnection';
 import { Thesi } from '../entity/thesiEntity';  
@@ -16,11 +16,13 @@ export const addThesi = async (req: Request<{}, {}, ThesiRequestBody>, res: Resp
     }
 
     try {
-        const thesiRepository = AppDataSource.getRepository(Thesi);
-        const newThesi = thesiRepository.create({ thesiId, status });
-        const result = await thesiRepository.save(newThesi);
+       
+        const result = await AppDataSource.getRepository(Thesi).query(
+            'INSERT INTO thesi ("thesiId", "status") VALUES ($1, $2) RETURNING *',
+            [thesiId, status]
+        );
 
-        res.status(201).json(result);
+        res.status(201).json(result[0]);
     } catch (error) {
         console.error('Error inserting thesi:', error);
         res.status(500).json({ error: 'Internal Server Error' });
